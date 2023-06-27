@@ -256,3 +256,28 @@ class MockStub {
     return this.#obj.fetch(new Request(input, init))
   }
 }
+
+/** @implements {InferInvokedCapability<typeof advance>} */
+export class MockInvoke {
+  #result
+
+  constructor (result) {
+    this.#result = result
+  }
+
+  /**
+   * Mocks the `invoke` function. Accepts an object and
+   * a "note by" object, returns a promise with the specified result.
+   *
+   * @param {object} obj
+   * @param {object} nb
+   * @returns {Promise<any>}
+   */
+  async invoke (obj, nb) {
+    if (obj.method === 'trivial' && obj.args.length === 0) {
+      return Promise.resolve('Trivially passed')
+    }
+
+    return Promise.resolve(this.#result)
+  }
+}
