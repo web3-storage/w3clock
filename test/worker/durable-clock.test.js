@@ -118,4 +118,36 @@ describe('DurableClock', () => {
     emitters = followings.get(sundial.did())
     assert(!emitters)
   })
+  it('throws error when stub.fetch fails', async () => {
+    const sundial = await Signer.generate()
+    const alice = await Signer.generate()
+
+    const namespace = new MockNamespace()
+    const id = namespace.idFromName(sundial.did())
+    const storage = new MockStorage()
+    const state = new MockState(id, storage)
+    const obj = new DurableClock(state, { DEBUG: 'true', PRIVATE_KEY: 'secret', CLOCK: namespace })
+    namespace.set(id, obj)
+
+    // Use our stub function to replace obj.fetch with a function that throws an error
+    const restoreFetch = stub(obj, 'fetch', () => { throw new Error('Fetch failed') })
+
+    let error = null
+    try {
+      await follow(namespace, sundial.did(), sundial.did(), alice.did())
+    } catch (e) {
+      error = e
+    }
+
+    restoreFetch() // restore the original fetch method
+
+    assert(error, 'Expected an error to be thrown')
+    assert.equal(error.message, 'Fetch failed')
+  })
 })
+
+function stub (obj, method, fn) {
+  const original = obj[method]
+  obj[method] = fn
+  return () => { obj[method] = original } // return a restore function
+}
